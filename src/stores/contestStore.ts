@@ -92,6 +92,7 @@ export const useContestStore = create<ContestState>((set, get) => ({
         } as CurrentContest;
       }
       set({ userContests: { ...current, contests } as Contest });
+      useAuthStore.getState().refreshUserData();
     }
 
     return result;
@@ -103,5 +104,8 @@ export const useContestStore = create<ContestState>((set, get) => ({
 
   updateInviteChallenge: async (userId, opponentId, action) => {
     await updateInviteChallengeApi(userId, opponentId, action);
+    if (action === 'accept') {
+      useAuthStore.getState().refreshUserData();
+    }
   },
 }));

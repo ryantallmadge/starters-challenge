@@ -15,8 +15,12 @@ export async function joinPublicContestLogic(
   contest_id?: string;
   error?: string;
 }> {
+  const tag = `[joinPublicContest][user=${userId}][slate=${slateId ?? "none"}]`;
+  console.log(`${tag} START`);
+
   const checkUser = await checkUserId(userId);
   if (!checkUser) {
+    console.log(`${tag} NOOP: user does not exist`);
     return { noop: "User does not exist" };
   }
 
@@ -25,11 +29,14 @@ export async function joinPublicContestLogic(
     .doc(userId)
     .get();
   const userContestData = userContestSnap.data();
+  console.log(`${tag} existing user_contests keys: ${userContestData?.contests ? Object.keys(userContestData.contests).length : 0}`);
 
   if (userContestData?.contests && slateId) {
-    for (const contest of Object.values(userContestData.contests) as any[]) {
+    for (const [key, contest] of Object.entries(userContestData.contests) as [string, any][]) {
       const contestSlateId = contest.slate?.id || contest.slate_id;
+      console.log(`${tag} checking existing contest ${key}: slateId=${contestSlateId}, stage=${contest.stage}`);
       if (contestSlateId === slateId && (contest.stage === "draft" || contest.stage === "pending")) {
+        console.log(`${tag} NOOP: already has active contest ${key} for this slate`);
         return { noop: "You already have an active contest for this slate" };
       }
     }
@@ -41,13 +48,18 @@ export async function joinPublicContestLogic(
   const slateSnap = await slateRef.get();
   const slateData = slateSnap.data();
   const entryCost = slateData?.entry_cost as number | undefined;
+  console.log(`${tag} slateExists=${slateSnap.exists}, entryCost=${entryCost}, slateData.entry_cost=${slateData?.entry_cost} (type=${typeof slateData?.entry_cost})`);
 
   if (entryCost && entryCost > 0) {
     const userSnap = await firestore.collection(Collections.USERS).doc(userId).get();
     const userCoins = (userSnap.data()?.coins as number) ?? 0;
+    console.log(`${tag} balance check: userCoins=${userCoins}, entryCost=${entryCost}, sufficient=${userCoins >= entryCost}`);
     if (userCoins < entryCost) {
+      console.log(`${tag} NOOP: insufficient coins (${userCoins} < ${entryCost})`);
       return { noop: "Insufficient coins" };
     }
+  } else {
+    console.log(`${tag} skipping balance check — entryCost is falsy or zero (entryCost=${entryCost})`);
   }
 
   const lobbyDocId = slateId || "WAITING";
@@ -56,10 +68,13 @@ export async function joinPublicContestLogic(
     .doc(lobbyDocId);
 
   const contestId = uuidv4();
+  console.log(`${tag} generated contestId=${contestId}, lobbyDocId=${lobbyDocId}`);
 
   const userPutInLobby = await firestore.runTransaction(async (transaction) => {
     const doc = await transaction.get(lobbyWaitingRef);
+    console.log(`${tag} lobby doc exists=${doc.exists}, data=${JSON.stringify(doc.data())}`);
     if (!doc.exists) {
+      console.log(`${tag} lobby empty — placing user in lobby`);
       transaction.set(lobbyWaitingRef, {
         user_id: userId,
         slate_id: slateId || null,
@@ -68,11 +83,15 @@ export async function joinPublicContestLogic(
       return "new";
     }
     if (doc.data()?.user_id === userId) {
+      console.log(`${tag} user already in lobby with contest_id=${doc.data()?.contest_id}`);
       return { already_waiting: true, contest_id: doc.data()?.contest_id };
     }
+    console.log(`${tag} lobby occupied by ${doc.data()?.user_id} — matching and deleting lobby`);
     transaction.delete(lobbyWaitingRef);
     return doc.data();
   });
+
+  console.log(`${tag} lobby transaction result: ${JSON.stringify(userPutInLobby)}`);
 
   if (
     typeof userPutInLobby === "object" &&
@@ -80,15 +99,27 @@ export async function joinPublicContestLogic(
     "already_waiting" in userPutInLobby
   ) {
     const existingId = (userPutInLobby as Record<string, unknown>).contest_id as string;
+    console.log(`${tag} returning early — already waiting, contest_id=${existingId}`);
     return { added: true, contest_id: existingId };
   }
 
   if (userPutInLobby === "new") {
+    console.log(`${tag} PATH=new — user placed in lobby`);
+
     if (entryCost && entryCost > 0) {
-      await deductCoins(userId, entryCost, {
-        type: "entry_fee",
-        contest_id: slateId,
-      });
+      console.log(`${tag} deducting coins: amount=${entryCost}, contest_id=${slateId}`);
+      try {
+        await deductCoins(userId, entryCost, {
+          type: "entry_fee",
+          contest_id: slateId,
+        });
+        console.log(`${tag} deductCoins completed successfully`);
+      } catch (err) {
+        console.error(`${tag} deductCoins FAILED:`, err);
+        throw err;
+      }
+    } else {
+      console.log(`${tag} skipping deductCoins — entryCost falsy or zero (entryCost=${entryCost})`);
     }
 
     await Promise.all([
@@ -107,14 +138,17 @@ export async function joinPublicContestLogic(
         { merge: true }
       ),
     ]);
+    console.log(`${tag} user_contests and user_in_contest written, returning added=true`);
     return { added: true, contest_id: contestId };
   }
 
   const lobbyData = userPutInLobby as Record<string, unknown>;
   const existingContestId = lobbyData.contest_id as string | undefined;
+  const opponentId = lobbyData.user_id as string;
+  console.log(`${tag} PATH=matched — creating game with opponent=${opponentId}, existingContestId=${existingContestId}`);
+  console.log(`${tag} coin deduction will be handled by joinContest (preDeducted=[${opponentId}])`);
 
   try {
-    const opponentId = lobbyData.user_id as string;
     const cId = await joinContest(
       userId,
       opponentId,
@@ -123,9 +157,10 @@ export async function joinPublicContestLogic(
       existingContestId,
       [opponentId]
     );
+    console.log(`${tag} game created, contest_id=${cId}`);
     return { game_created: true, contest_id: cId };
   } catch (e) {
-    console.error("Failed to create contest:", e);
+    console.error(`${tag} Failed to create contest:`, e);
     return { error: "could not create contest" };
   }
 }

@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Fanium Challenge",
-    "slug": "fanium-challenge",
+    "name": "Starters Challenge",
+    "slug": "starters-challenge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "fanium-challenge",
+    "scheme": "starters-challenge",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,16 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fanium.challenge"
+      "bundleIdentifier": "com.starters.challenge"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#07192A",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#07192A"
       },
-      "package": "com.fanium.challenge"
+      "package": "com.starters.challenge"
     },
     "web": {
       "favicon": "./assets/favicon.png",

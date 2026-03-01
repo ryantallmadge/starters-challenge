@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../src/services/firebase';
 import { useAuthStore } from '../../src/stores/authStore';
 import { Colors, Fonts, FontSizes } from '../../src/theme';
@@ -43,17 +43,15 @@ export default function CoinLedgerScreen() {
 
   useEffect(() => {
     if (!authUser) return;
-
-    const load = async () => {
-      const ref = collection(firestore, 'USERS', authUser.uid, 'COIN_LEDGER');
-      const q = query(ref, orderBy('created_at', 'desc'));
-      const snap = await getDocs(q);
-      const items = snap.docs.map((doc) => doc.data() as CoinLedgerEntry);
-      setEntries(items);
+    const ref = collection(firestore, 'USERS', authUser.uid, 'COIN_LEDGER');
+    const q = query(ref, orderBy('created_at', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      setEntries(snap.docs.map((d) => d.data() as CoinLedgerEntry));
       setLoading(false);
-    };
-
-    load();
+    }, () => {
+      setLoading(false);
+    });
+    return unsub;
   }, [authUser?.uid]);
 
   const renderItem = ({ item }: { item: CoinLedgerEntry }) => {

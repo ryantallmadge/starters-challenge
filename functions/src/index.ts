@@ -24,5 +24,7 @@ export {
   runStandingsScheduled,
   updateLeaderboardScheduled,
   setTierWinsScheduled,
-  draftClockScheduled,
 } from "./challenge/endpoints/scheduled.js";
+
+// Task queue functions
+export { autoPickTaskFn as autoPickTask } from "./challenge/endpoints/autoPickTask.js";

@@ -13,17 +13,24 @@ export async function deductCoins(
   amount: number,
   meta: CoinTransactionMeta
 ): Promise<void> {
+  const tag = `[deductCoins][user=${userId}]`;
+  console.log(`${tag} called: amount=${amount}, meta=${JSON.stringify(meta)}`);
+
   await firestore.runTransaction(async (transaction) => {
     const userRef = firestore.collection(Collections.USERS).doc(userId);
     const userSnap = await transaction.get(userRef);
     const userData = userSnap.data();
 
+    console.log(`${tag} userSnap.exists=${userSnap.exists}, userData.coins=${userData?.coins} (type=${typeof userData?.coins})`);
+
     if (!userData) {
+      console.error(`${tag} ABORT: user doc not found`);
       throw new Error("User not found");
     }
 
     const currentCoins = userData.coins ?? 0;
     if (currentCoins < amount) {
+      console.error(`${tag} ABORT: insufficient coins (${currentCoins} < ${amount})`);
       throw new Error("Insufficient coins");
     }
 
@@ -41,9 +48,15 @@ export async function deductCoins(
     if (meta.contest_id) entry.contest_id = meta.contest_id;
     if (meta.opponent_id) entry.opponent_id = meta.opponent_id;
 
+    console.log(`${tag} writing: coins ${currentCoins} -> ${newBalance}, ledger entry=${entryId}, ledgerPath=${ledgerRef.path}`);
+    console.log(`${tag} ledger entry: ${JSON.stringify(entry)}`);
+
     transaction.update(userRef, { coins: newBalance });
     transaction.set(ledgerRef, entry);
+    console.log(`${tag} transaction ops queued (update user + set ledger)`);
   });
+
+  console.log(`${tag} transaction committed successfully`);
 }
 
 export async function creditCoins(

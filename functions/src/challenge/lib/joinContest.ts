@@ -3,6 +3,7 @@ import { MINUTES_DRAFT_CLOCK } from "./config.js";
 import { checkUserId } from "../../utils/checkUserId.js";
 import { firestore, messaging, Collections } from "../../admin.js";
 import { deductCoins } from "./coins.js";
+import { enqueueDraftAutoPick } from "./enqueueDraftAutoPick.js";
 
 function shuffleArray<T>(array: T[]): T[] {
   let currentIndex = array.length;
@@ -151,6 +152,12 @@ export async function joinContest(
       { merge: true }
     ),
   ]);
+
+  try {
+    await enqueueDraftAutoPick(cId, draftOrder[0], 0, pickTime);
+  } catch (e) {
+    console.error("Failed to enqueue auto-pick task:", e);
+  }
 
   const tokens = [
     homeTeamVal.message_token,

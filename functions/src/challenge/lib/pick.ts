@@ -2,6 +2,7 @@ import { MINUTES_DRAFT_CLOCK } from "./config.js";
 import { checkUserId } from "../../utils/checkUserId.js";
 import { firestore, messaging, Collections } from "../../admin.js";
 import { FieldValue } from "firebase-admin/firestore";
+import { enqueueDraftAutoPick } from "./enqueueDraftAutoPick.js";
 
 export async function pick(
   userId: string,
@@ -129,6 +130,12 @@ export async function pick(
     firestore.collection(Collections.USER_CONTESTS).doc(opponentId).update(draftUpdate),
     firestore.collection(Collections.USER_CONTESTS).doc(userId).update(draftUpdate),
   ]);
+
+  try {
+    await enqueueDraftAutoPick(resolvedContestId, onTheClock, currentPick, pickTime);
+  } catch (e) {
+    console.error("Failed to enqueue auto-pick task:", e);
+  }
 
   if (onTheClock !== userId) {
     const opponent = await checkUserId(opponentId);

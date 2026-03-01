@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../../src/services/firebase';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { Colors, Fonts, FontSizes } from '../../../src/theme';
@@ -47,22 +47,18 @@ export default function CoinsScreen() {
   const [recentTx, setRecentTx] = useState<CoinLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadRecent = useCallback(async () => {
-    if (!authUser) return;
-    try {
-      const ref = collection(firestore, 'USERS', authUser.uid, 'COIN_LEDGER');
-      const q = query(ref, orderBy('created_at', 'desc'), limit(5));
-      const snap = await getDocs(q);
-      setRecentTx(snap.docs.map((doc) => doc.data() as CoinLedgerEntry));
-    } catch {
-      // silent
-    }
-    setLoading(false);
-  }, [authUser?.uid]);
-
   useEffect(() => {
-    loadRecent();
-  }, [loadRecent]);
+    if (!authUser) return;
+    const ref = collection(firestore, 'USERS', authUser.uid, 'COIN_LEDGER');
+    const q = query(ref, orderBy('created_at', 'desc'), limit(5));
+    const unsub = onSnapshot(q, (snap) => {
+      setRecentTx(snap.docs.map((d) => d.data() as CoinLedgerEntry));
+      setLoading(false);
+    }, () => {
+      setLoading(false);
+    });
+    return unsub;
+  }, [authUser?.uid]);
 
   const coins = userData?.coins ?? 0;
 

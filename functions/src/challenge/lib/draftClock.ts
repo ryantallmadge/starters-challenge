@@ -1,42 +1,7 @@
 import { pick as pickFunc } from "./pick.js";
 import { firestore, Collections } from "../../admin.js";
 import type { SlatePlayer } from "../../types.js";
-
-function getBestPick(
-  tier: { players: string[] },
-  players: Record<string, SlatePlayer>,
-  currentContest: Record<string, unknown>
-): SlatePlayer {
-  const playersToSort: SlatePlayer[] = [];
-  const playersArray = Array.from(tier.players);
-
-  for (const playerId of playersArray) {
-    const currentPlayer = players[playerId];
-    const picks = currentContest.picks as string[] | undefined;
-    const oppenent = currentContest.oppenent as Record<string, unknown> | undefined;
-    const opponentPicks = oppenent?.picks as string[] | undefined;
-
-    if (picks?.includes(playerId)) continue;
-    if (opponentPicks?.includes(playerId)) continue;
-    if (currentPlayer.picked) continue;
-
-    playersToSort.push(currentPlayer);
-  }
-
-  playersToSort.sort((a, b) => {
-    if (a.key_stat) {
-      if (parseFloat(String(a.key_stat)) < parseFloat(String(b.key_stat))) return 1;
-      if (parseFloat(String(a.key_stat)) > parseFloat(String(b.key_stat))) return -1;
-    }
-    const aName = a.last_name || a.name || "";
-    const bName = b.last_name || b.name || "";
-    if (aName < bName) return 1;
-    if (aName > bName) return -1;
-    return 0;
-  });
-
-  return playersToSort[0];
-}
+import { getBestPick } from "./getBestPick.js";
 
 export async function draftClock(): Promise<boolean> {
   const userContestsSnap = await firestore
@@ -87,6 +52,11 @@ export async function draftClock(): Promise<boolean> {
           players,
           currentContest
         );
+
+        if (!bestPick) {
+          console.error(`No available pick for contest ${contestId}`);
+          continue;
+        }
 
         const onTheClock = draft.on_the_clock as string;
         console.log(`Drafting ${bestPick.id} for ${onTheClock} in contest ${contestId}`);

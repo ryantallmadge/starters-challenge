@@ -4,7 +4,6 @@ import { moveSlates } from "../lib/moveSlates.js";
 import { runStandings } from "../lib/runStandings.js";
 import { updateLeaderboard } from "../lib/updateLeaderboard.js";
 import { currentTierWins } from "../lib/currentTierWins.js";
-import { draftClock } from "../lib/draftClock.js";
 
 export const runScoreLiveSlate = onSchedule(
   {
@@ -58,14 +57,3 @@ export const setTierWinsScheduled = onSchedule(
   }
 );
 
-export const draftClockScheduled = onSchedule(
-  {
-    schedule: "* * * * *",
-    timeZone: "America/New_York",
-    timeoutSeconds: 120,
-    memory: "1GiB",
-  },
-  async () => {
-    await draftClock();
-  }
-);
