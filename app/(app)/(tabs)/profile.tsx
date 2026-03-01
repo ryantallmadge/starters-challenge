@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   ImageBackground,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -16,6 +17,8 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { useUserStore } from '../../../src/stores/userStore';
 import { useLeaderboardStore } from '../../../src/stores/leaderboardStore';
 import { getAvatarSource, avatarKeys } from '../../../src/utils/avatarImages';
+
+const TABS = ['Coins', 'Update Avatar'] as const;
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -27,6 +30,8 @@ export default function ProfileScreen() {
   const fetchUser = useUserStore((s) => s.fetchUser);
   const leaderboard = useLeaderboardStore((s) => s.leaderboard);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(TABS[0]);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   if (!user) return null;
 
@@ -36,11 +41,9 @@ export default function ProfileScreen() {
     return leader.user.id === authUser?.uid;
   });
 
-  const getRecord = () => {
-    const currentUser = leaderboard.find((l) => l.user.id === authUser?.uid);
-    if (!currentUser?.record) return '0-0';
-    return `${currentUser.record.wins}-${currentUser.record.losses}`;
-  };
+  const currentUser = leaderboard.find((l) => l.user.id === authUser?.uid);
+  const wins = currentUser?.record?.wins ?? 0;
+  const losses = currentUser?.record?.losses ?? 0;
 
   const renderAvatarGrid = () => {
     const rows: React.ReactNode[] = [];
@@ -68,10 +71,12 @@ export default function ProfileScreen() {
 
   return (
     <LinearGradient colors={['rgb(0,81,255)', 'rgb(0,157,255)']} style={styles.container}>
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+      {/* Logout */}
+      <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutConfirm(true)}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
 
+      {/* Hero */}
       <ImageBackground
         source={require('../../../assets/images/pick-avatar/light.png')}
         style={styles.pickedAvatar}
@@ -83,46 +88,77 @@ export default function ProfileScreen() {
       </ImageBackground>
 
       <Text style={styles.avatarName}>{user.display_name}</Text>
+      <Text style={styles.email}>{user.email}</Text>
 
-      <View style={styles.achievements}>
-        <View style={styles.achievementNumbers}>
-          <Text style={styles.achievementUnlocked}>Avatars Unlocked</Text>
-          <Text style={[styles.achievementNumbersText, { textAlign: 'right' }]}>
-            <Text style={styles.achievementNumbersTextWhite}>{avatarKeys.length}</Text>/{avatarKeys.length}
-          </Text>
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{wins}</Text>
+          <Text style={styles.statLabel}>Wins</Text>
         </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressBarInner, { width: '100%' }]} />
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{losses}</Text>
+          <Text style={styles.statLabel}>Losses</Text>
         </View>
-      </View>
-
-      <View style={styles.records}>
-        <View>
-          <Text style={styles.recordsNumber}>{getRecord()}</Text>
-          <Text style={styles.recordsLabel}>Record</Text>
-        </View>
-        <View>
-          <Text style={styles.recordsNumber}>{leaderIndex} / {leaderboard.length}</Text>
-          <Text style={styles.recordsLabel}>Leaderboard</Text>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{leaderIndex}</Text>
+          <Text style={styles.statLabel}>Leaderboard</Text>
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.coinBar}
-        onPress={() => router.push('/coin-ledger')}
-        activeOpacity={0.7}
-      >
-        <MaterialIcons name="toll" size={22} color="#FFD700" />
-        <Text style={styles.coinBarAmount}>{userData?.coins ?? 0}</Text>
-        <Text style={styles.coinBarLabel}>Coins</Text>
-        <View style={{ flex: 1 }} />
-        <Text style={styles.coinBarAction}>View History</Text>
-        <MaterialIcons name="chevron-right" size={20} color={Colors.white} />
-      </TouchableOpacity>
+      {/* Tab Row */}
+      <View style={styles.tabRow}>
+        {TABS.map((tab) => {
+          const selected = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              style={[styles.tab, selected && styles.tabSelected]}
+            >
+              <Text style={[styles.tabText, selected && styles.tabTextSelected]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-      <ScrollView style={{ flex: 1, width: '100%' }}>{renderAvatarGrid()}</ScrollView>
+      {/* Tab Content */}
+      {activeTab === 'Coins' ? (
+        <View style={styles.tabContent}>
+          <View style={styles.coinCard}>
+            <View style={styles.coinCardTop}>
+              <View style={styles.coinIconCircle}>
+                <MaterialIcons name="toll" size={32} color="#FFD700" />
+              </View>
+              <View style={styles.coinCardInfo}>
+                <Text style={styles.coinAmount}>{(userData?.coins ?? 0).toLocaleString()}</Text>
+                <Text style={styles.coinLabel}>Coins</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.viewHistoryButton}
+              onPress={() => router.push('/coin-ledger')}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="receipt-long" size={18} color={Colors.white} />
+              <Text style={styles.viewHistoryText}>View History</Text>
+              <View style={{ flex: 1 }} />
+              <MaterialIcons name="chevron-right" size={20} color={Colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <ScrollView style={styles.avatarScrollArea} contentContainerStyle={styles.avatarScrollContent}>
+          {renderAvatarGrid()}
+        </ScrollView>
+      )}
 
-      {currentAvatar && (
+      {/* Avatar Confirm Bar */}
+      {currentAvatar && activeTab === 'Update Avatar' && (
         <View style={styles.confirmBox}>
           <TouchableOpacity style={styles.cancelSelection} onPress={() => setCurrentAvatar(null)}>
             <Text style={styles.confirmSelectionText}>CANCEL</Text>
@@ -139,6 +175,36 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* User ID */}
+      <Text style={styles.userId}>ID: {authUser?.uid}</Text>
+
+      {/* Logout Confirmation Modal */}
+      <Modal visible={showLogoutConfirm} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Log Out?</Text>
+            <Text style={styles.modalText}>Are you sure you want to log out?</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setShowLogoutConfirm(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                onPress={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                }}
+              >
+                <Text style={styles.modalButtonText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -153,7 +219,11 @@ const styles = StyleSheet.create({
   },
   avatar: { width: Spacing.avatarXL, height: Spacing.avatarXL },
   logoutButton: { position: 'absolute', top: 60, right: 20, zIndex: 10 },
-  logoutButtonText: { fontFamily: Fonts.vanguardDemiBold, fontSize: FontSizes.xl, color: Colors.white },
+  logoutButtonText: {
+    fontFamily: Fonts.vanguardDemiBold,
+    fontSize: FontSizes.xl,
+    color: Colors.white,
+  },
   pickedAvatar: {
     width: 164,
     height: 283,
@@ -166,88 +236,145 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.hero,
     color: Colors.white,
     paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 2,
   },
-  achievements: {
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingVertical: 5,
-  },
-  achievementUnlocked: {
+  email: {
     fontFamily: Fonts.robotoCondensedRegular,
-    fontSize: FontSizes.lg,
-    color: Colors.white,
+    fontSize: FontSizes.md,
+    color: Colors.recordsLabel,
+    paddingBottom: 8,
   },
-  achievementNumbers: {
-    width: '100%',
+
+  // Stats
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 10,
-  },
-  achievementNumbersTextWhite: { color: Colors.white },
-  achievementNumbersText: {
-    fontFamily: Fonts.vanguardMedium,
-    color: Colors.leaderboardAchievement,
-    fontSize: FontSizes.lg,
-  },
-  progressBar: {
-    width: '100%',
-    height: 13,
-    borderRadius: 8.5,
-    backgroundColor: Colors.progressBarBg,
-    overflow: 'hidden',
-  },
-  progressBarInner: {
-    height: 13,
-    borderTopRightRadius: 8.5,
-    borderBottomRightRadius: 8.5,
-    backgroundColor: Colors.progressBarFill,
-  },
-  records: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingBottom: 5,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 16,
+    marginHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginBottom: 14,
   },
-  recordsNumber: {
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
     fontFamily: Fonts.vanguardBold,
-    fontSize: FontSizes.xxxl,
+    fontSize: FontSizes.title,
     color: Colors.white,
-    textAlign: 'center',
   },
-  recordsLabel: {
+  statLabel: {
     fontFamily: Fonts.robotoCondensedRegular,
     color: Colors.recordsLabel,
-    fontSize: FontSizes.md,
-    textAlign: 'center',
+    fontSize: FontSizes.sm,
+    marginTop: 2,
   },
-  coinBar: {
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  // Tabs
+  tabRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    marginHorizontal: 16,
-    marginBottom: 10,
+    gap: 10,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  tab: {
+    paddingVertical: 7,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabSelected: {
+    backgroundColor: Colors.primaryBlueLink,
+    borderColor: Colors.white,
+  },
+  tabText: {
+    textAlign: 'center',
+    fontFamily: Fonts.vanguardDemiBold,
+    fontSize: FontSizes.xl,
+    lineHeight: FontSizes.xl,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.5)',
+    includeFontPadding: false,
+  },
+  tabTextSelected: {
+    color: Colors.white,
+  },
+
+  // Tab content
+  tabContent: {
+    flex: 1,
+    width: '100%',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+  },
+
+  // Coins card
+  coinCard: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 20,
+    padding: 20,
+  },
+  coinCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  coinIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coinCardInfo: {
+    marginLeft: 16,
+  },
+  coinAmount: {
+    fontFamily: Fonts.vanguardExtraBold,
+    fontSize: 40,
+    color: '#FFD700',
+    lineHeight: 44,
+  },
+  coinLabel: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.md,
+    color: Colors.recordsLabel,
+    marginTop: 2,
+  },
+  viewHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     gap: 8,
   },
-  coinBarAmount: {
-    fontFamily: Fonts.vanguardBold,
-    fontSize: FontSizes.xl,
-    color: '#FFD700',
-  },
-  coinBarLabel: {
-    fontFamily: Fonts.robotoCondensedRegular,
-    fontSize: FontSizes.md,
-    color: Colors.recordsLabel,
-  },
-  coinBarAction: {
+  viewHistoryText: {
     fontFamily: Fonts.robotoCondensedBold,
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.base,
     color: Colors.white,
-    letterSpacing: 0.5,
+  },
+
+  // Avatar grid
+  avatarScrollArea: {
+    flex: 1,
+    width: '100%',
+  },
+  avatarScrollContent: {
+    paddingBottom: 140,
   },
   avatarRow: {
     flexDirection: 'row',
@@ -269,16 +396,19 @@ const styles = StyleSheet.create({
     borderColor: Colors.successGreenCyan,
     borderWidth: 6,
   },
+
+  // Confirm bar
   confirmBox: {
     height: 85,
     width: '100%',
     position: 'absolute',
     backgroundColor: Colors.black,
     zIndex: 999999,
-    bottom: 0,
+    bottom: 110,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    borderRadius: 16,
   },
   cancelSelection: {
     backgroundColor: Colors.cancelGrey,
@@ -301,5 +431,65 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: FontSizes.xl,
     textAlign: 'center',
+  },
+
+  userId: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.xs,
+    color: 'rgba(255,255,255,0.3)',
+    paddingVertical: 8,
+  },
+
+  // Logout modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontFamily: Fonts.vanguardExtraBold,
+    fontSize: FontSizes.xxl,
+    color: Colors.backgroundDark,
+    marginBottom: 8,
+  },
+  modalText: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.base,
+    color: Colors.neutralMid,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalCancel: {
+    flex: 1,
+    backgroundColor: Colors.cancelGrey,
+    borderRadius: Spacing.borderRadiusLg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalConfirm: {
+    flex: 1,
+    backgroundColor: Colors.accentOrange,
+    borderRadius: Spacing.borderRadiusLg,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.lg,
+    color: Colors.white,
   },
 });

@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-} from 'react-native';
+import { StyleSheet, Text, View, Image } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { Colors, Fonts, FontSizes } from '../../src/theme';
 import FullLoading from '../../src/components/FullLoading';
-import AnimatedLogoGlow from '../../src/components/AnimatedLogoGlow';
+import FloatingAvatarMarquee from '../../src/components/FloatingAvatarMarquee';
+import AuthInput from '../../src/components/AuthInput';
+import GradientButton from '../../src/components/GradientButton';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -37,62 +35,85 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient colors={['rgb(11,152,93)', 'rgb(75,242,172)']} style={styles.container}>
+      <FloatingAvatarMarquee />
+
+      {/* Decorative sport icons */}
+      <View style={styles.sportIconsLayer} pointerEvents="none">
+        <MaterialIcons name="sports-basketball" size={64} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 60, left: -10 }} />
+        <MaterialIcons name="sports-football" size={52} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 100, right: 10 }} />
+        <MaterialIcons name="sports-baseball" size={48} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 120, left: 20 }} />
+        <MaterialIcons name="sports-hockey" size={56} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 80, right: -5 }} />
+        <MaterialIcons name="emoji-events" size={44} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 200, left: '45%' }} />
+      </View>
+
       <View style={styles.content}>
-        <AnimatedLogoGlow />
-
-        <View style={{ height: 30 }} />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={Colors.grey}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          returnKeyType="done"
-          onChangeText={setEmail}
-          value={email}
+        <Image
+          source={require('../../assets/images/starterslogo.png')}
+          style={styles.logo}
         />
 
-        <View style={{ height: 10 }} />
+        <Animated.Text
+          entering={FadeInDown.delay(100).duration(600)}
+          style={styles.tagline}
+        >
+          DRAFT. COMPETE. WIN.
+        </Animated.Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={Colors.grey}
-          secureTextEntry
-          returnKeyType="done"
-          onChangeText={setPassword}
-          value={password}
-        />
+        <View style={{ height: 28 }} />
+
+        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.fullWidth}>
+          <AuthInput
+            icon="mail-outline"
+            placeholder="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            returnKeyType="done"
+            onChangeText={setEmail}
+            value={email}
+          />
+        </Animated.View>
+
+        <View style={{ height: 12 }} />
+
+        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.fullWidth}>
+          <AuthInput
+            icon="lock-outline"
+            placeholder="Password"
+            secureTextEntry
+            returnKeyType="done"
+            onChangeText={setPassword}
+            value={password}
+          />
+        </Animated.View>
 
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <Animated.Text entering={FadeInDown.duration(300)} style={styles.errorText}>
+            {error}
+          </Animated.Text>
         ) : null}
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 24 }} />
 
-        <TouchableOpacity
-          onPress={handleSignIn}
-          style={[
-            styles.signInButton,
-            { backgroundColor: email && password ? Colors.primaryBlue : Colors.grey },
-          ]}
-        >
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.fullWidth}>
+          <GradientButton
+            label="Sign In"
+            onPress={handleSignIn}
+            colors={['rgb(255,92,42)', 'rgb(255,193,0)']}
+            disabled={!email || !password}
+          />
+        </Animated.View>
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 24 }} />
 
-        <View style={styles.createAccountSection}>
+        <Animated.View entering={FadeInDown.delay(500).duration(500)} style={styles.createAccountSection}>
           <Text style={styles.noAccountText}>Don't Have An Account?</Text>
-          <View style={{ height: 10 }} />
-          <TouchableOpacity
+          <View style={{ height: 12 }} />
+          <GradientButton
+            label="Create Account"
             onPress={() => router.push('/(auth)/signup')}
-            style={styles.createAccountButton}
-          >
-            <Text style={styles.buttonText}>Create Account</Text>
-          </TouchableOpacity>
-        </View>
+            colors={['rgb(11,152,93)', 'rgb(5,208,123)']}
+          />
+        </Animated.View>
       </View>
     </LinearGradient>
   );
@@ -101,66 +122,60 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundDark,
+  },
+  sportIconsLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   content: {
-    width: '100%',
-    height: '100%',
-    paddingHorizontal: 20,
+    flex: 1,
+    paddingHorizontal: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
+  },
+  logo: {
+    width: 220,
+    height: 170,
+    resizeMode: 'contain',
+  },
+  tagline: {
+    fontFamily: Fonts.vanguardExtraBold,
+    fontSize: FontSizes.title,
+    color: Colors.white,
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginTop: 12,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  fullWidth: {
+    width: '100%',
   },
   errorText: {
     color: Colors.white,
-    backgroundColor: 'rgba(255,59,48,0.8)',
+    backgroundColor: 'rgba(255,59,48,0.85)',
     width: '100%',
     textAlign: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     fontSize: FontSizes.md,
     fontFamily: Fonts.robotoCondensedRegular,
     overflow: 'hidden',
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: Colors.white,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    textAlign: 'left',
-    color: Colors.black,
-  },
-  signInButton: {
-    width: '100%',
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  buttonText: {
-    textAlign: 'center',
-    fontSize: FontSizes.xxl,
-    fontFamily: Fonts.vanguardBold,
-    textTransform: 'uppercase',
-    color: Colors.white,
+    marginTop: 12,
   },
   noAccountText: {
-    fontSize: FontSizes.xs,
+    fontSize: FontSizes.sm,
     fontFamily: Fonts.arnoldSans,
     textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 1,
   },
   createAccountSection: {
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-  },
-  createAccountButton: {
-    width: '100%',
-    backgroundColor: Colors.successGreenDark,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
   },
 });

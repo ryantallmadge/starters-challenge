@@ -6,6 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSizes } from '../../src/theme';
 import { useContestStore } from '../../src/stores/contestStore';
 import { useUserStore } from '../../src/stores/userStore';
+import getAvatarUrl from '../../src/utils/getAvatarUrl';
 
 function getPlayerName(player: any) {
   if (player.type === 'team') return player.name;
@@ -38,21 +39,9 @@ function pickWinner(user: any, opponent: any) {
   return null;
 }
 
-function getCircleColors(player: any, winner: any): readonly [string, string] {
-  if (!winner) return ['#FFFFFF', '#FFFFFF'];
-  if (player.id === winner.id) return ['rgb(67,255,176)', 'rgb(11,217,131)'];
-  return ['#FFFFFF', '#FFFFFF'];
-}
-
-function getNameColor(player: any, winner: any) {
-  if (!winner) return {};
-  if (player.id === winner.id) return { color: Colors.successGreen };
-  return {};
-}
-
 function renderGameStatus(game: any) {
   if (game?.status) return game.status;
-  return game?.time ? `Game Start | ${game.time}` : '';
+  return game?.time ? `${game.time}` : '';
 }
 
 export default function LiveScoringScreen() {
@@ -68,7 +57,8 @@ export default function LiveScoringScreen() {
 
   if (!current || !user || !opponent) return null;
 
-  const wager = current.wager || 'Bragging Rights';
+  const entryCost = current.slate?.entry_cost as number | undefined;
+  const payout = current.slate?.payout as number | undefined;
   const slatePlayers = current.slate?.players || {};
   const tiers = current.slate?.tiers || [];
   const userPicks = current.picks || {};
@@ -93,32 +83,9 @@ export default function LiveScoringScreen() {
     }
   });
 
-  const maxWins = 3;
-  const userBarWidth = userWins < maxWins ? `${(userWins / maxWins) * 50}%` : '50%';
-  const oppBarWidth = oppWins < maxWins ? `${(oppWins / maxWins) * 50}%` : '50%';
-
-  const renderWinnerHighlight = (player: any, winner: any, isOpponent: boolean) => {
-    if (!winner || player.id !== winner.id) return null;
-
-    if (!isOpponent) {
-      return (
-        <LinearGradient
-          colors={['rgb(193,255,229)', '#FFFFFF']}
-          style={[styles.winnerHighlight, { left: 0 }]}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 1, y: 1 }}
-        />
-      );
-    }
-    return (
-      <LinearGradient
-        colors={['rgb(193,255,229)', '#FFFFFF']}
-        style={[styles.winnerHighlight, { right: 0 }]}
-        start={{ x: 1, y: 1 }}
-        end={{ x: 0, y: 1 }}
-      />
-    );
-  };
+  const maxWins = Math.max(roundCount, 1);
+  const userBarWidth = userWins > 0 ? `${(userWins / maxWins) * 50}%` : '0%';
+  const oppBarWidth = oppWins > 0 ? `${(oppWins / maxWins) * 50}%` : '0%';
 
   const renderPickCard = ({ item, index }: { item: { user: any; opponent: any }; index: number }) => {
     const { user: userPlayer, opponent: oppPlayer } = item;
@@ -126,62 +93,99 @@ export default function LiveScoringScreen() {
     if (!userPlayer || !oppPlayer) return null;
 
     const winner = pickWinner(userPlayer, oppPlayer);
+    const userWon = winner && winner.id === userPlayer.id;
+    const oppWon = winner && winner.id === oppPlayer.id;
 
     return (
-      <View>
-        <View style={styles.playerCard}>
-          {renderWinnerHighlight(userPlayer, winner, false)}
-          {renderWinnerHighlight(oppPlayer, winner, true)}
+      <View style={styles.battleCard}>
+        <View style={styles.roundPill}>
+          <Text style={styles.roundPillText}>
+            ROUND {index + 1}{tier?.question ? `  •  ${tier.question}` : ''}
+          </Text>
+        </View>
 
-          <View style={styles.playerPhotoUser}>
+        <View style={styles.battleRow}>
+          <View style={[styles.playerSide, userWon && styles.winningSide]}>
+            {userWon && (
+              <MaterialIcons
+                name="emoji-events"
+                size={18}
+                color={Colors.accentYellow}
+                style={styles.trophyIcon}
+              />
+            )}
             <Image
               style={styles.playerThumbnail}
               source={{ uri: userPlayer.thumbnail }}
             />
+            <Text
+              style={[
+                styles.playerName,
+                userWon && styles.winnerName,
+                oppWon && styles.loserName,
+              ]}
+              numberOfLines={1}
+            >
+              {getPlayerName(userPlayer)}
+            </Text>
+            <View style={[styles.scoreBadge, userWon && styles.winnerScoreBadge]}>
+              <Text
+                style={[styles.scoreText, userWon && styles.winnerScoreText]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {userPlayer.score ?? '-'}
+              </Text>
+            </View>
+            {renderGameStatus(userPlayer.game) ? (
+              <Text style={styles.gameStatusText}>{renderGameStatus(userPlayer.game)}</Text>
+            ) : null}
           </View>
 
-          <LinearGradient
-            colors={getCircleColors(userPlayer, winner)}
-            style={[styles.scoreCircle, styles.userScorePosition]}
-          >
-            <Text style={styles.scoreText} numberOfLines={1} adjustsFontSizeToFit>
-              {userPlayer.score}
-            </Text>
-          </LinearGradient>
+          <View style={styles.vsDivider}>
+            <View style={styles.vsLine} />
+            <View style={styles.vsCircle}>
+              <Text style={styles.vsText}>VS</Text>
+            </View>
+            <View style={styles.vsLine} />
+          </View>
 
-          <Text style={styles.question}>{tier?.question}</Text>
-          <Text style={[styles.playerName, getNameColor(userPlayer, winner)]}>
-            {getPlayerName(userPlayer)}
-          </Text>
-          <Text style={styles.tierType}>{tier?.type}</Text>
-          <Text style={[styles.playerName, getNameColor(oppPlayer, winner)]}>
-            {getPlayerName(oppPlayer)}
-          </Text>
-
-          <LinearGradient
-            colors={getCircleColors(oppPlayer, winner)}
-            style={[styles.scoreCircle, styles.oppScorePosition]}
-          >
-            <Text style={styles.scoreText} numberOfLines={1} adjustsFontSizeToFit>
-              {oppPlayer.score}
-            </Text>
-          </LinearGradient>
-
-          <View style={styles.playerPhotoOpp}>
+          <View style={[styles.playerSide, oppWon && styles.winningSide]}>
+            {oppWon && (
+              <MaterialIcons
+                name="emoji-events"
+                size={18}
+                color={Colors.accentYellow}
+                style={styles.trophyIcon}
+              />
+            )}
             <Image
               style={styles.playerThumbnail}
               source={{ uri: oppPlayer.thumbnail }}
             />
+            <Text
+              style={[
+                styles.playerName,
+                oppWon && styles.winnerName,
+                userWon && styles.loserName,
+              ]}
+              numberOfLines={1}
+            >
+              {getPlayerName(oppPlayer)}
+            </Text>
+            <View style={[styles.scoreBadge, oppWon && styles.winnerScoreBadge]}>
+              <Text
+                style={[styles.scoreText, oppWon && styles.winnerScoreText]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {oppPlayer.score ?? '-'}
+              </Text>
+            </View>
+            {renderGameStatus(oppPlayer.game) ? (
+              <Text style={styles.gameStatusText}>{renderGameStatus(oppPlayer.game)}</Text>
+            ) : null}
           </View>
-        </View>
-
-        <View style={styles.cardFooter}>
-          <Text style={styles.gameTime}>
-            {renderGameStatus(userPlayer.game)}
-          </Text>
-          <Text style={styles.gameTime}>
-            {renderGameStatus(oppPlayer.game)}
-          </Text>
         </View>
       </View>
     );
@@ -190,23 +194,45 @@ export default function LiveScoringScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['rgb(0,81,255)', 'rgb(0,157,255)']}
+        colors={['rgb(0,81,255)', 'rgb(0,137,255)', 'rgb(0,157,255)']}
         style={styles.header}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <MaterialIcons name="chevron-left" size={30} color={Colors.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitleText}>This Game is For:</Text>
-        <Text style={styles.headerTitleLabel} adjustsFontSizeToFit numberOfLines={1}>
-          {wager}
-        </Text>
-        <View style={styles.users}>
-          <Text style={[styles.displayName, { textAlign: 'left' }]}>
-            {user.display_name}
-          </Text>
-          <Text style={[styles.displayName, { textAlign: 'right' }]}>
-            {opponent.display_name}
-          </Text>
+
+        <View style={styles.avatarRow}>
+          <View style={styles.avatarSide}>
+            <Image style={styles.avatar} source={getAvatarUrl(user.avatar)} />
+            <Text style={styles.displayName} numberOfLines={1}>{user.display_name}</Text>
+          </View>
+
+          <Image
+            style={styles.vsImage}
+            source={require('../../assets/images/play-tab/vsBlue.png')}
+          />
+
+          <View style={styles.avatarSide}>
+            <Image style={styles.avatar} source={getAvatarUrl(opponent.avatar || '')} />
+            <Text style={styles.displayName} numberOfLines={1}>{opponent.display_name}</Text>
+          </View>
+        </View>
+
+        <View style={styles.stakesRow}>
+          <View style={styles.stakePill}>
+            <MaterialIcons name="toll" size={14} color={Colors.accentYellow} />
+            <Text style={styles.stakeLabel}>Entry</Text>
+            <Text style={styles.stakeValue} numberOfLines={1}>
+              {entryCost ? `${entryCost} coins` : 'Free'}
+            </Text>
+          </View>
+          <View style={styles.stakePill}>
+            <MaterialIcons name="emoji-events" size={14} color={Colors.accentYellow} />
+            <Text style={styles.stakeLabel}>Win</Text>
+            <Text style={styles.stakeValue} numberOfLines={1}>
+              {payout ? `${payout} coins` : 'Bragging Rights'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.progressBar}>
@@ -238,10 +264,9 @@ export default function LiveScoringScreen() {
             />
           </View>
 
-          <Image
-            style={{ width: 80, height: 42 }}
-            source={require('../../assets/images/draft/theBelt.png')}
-          />
+          <View style={styles.scoreTally}>
+            <Text style={styles.scoreTallyText}>{userWins} - {oppWins}</Text>
+          </View>
         </View>
       </LinearGradient>
 
@@ -249,7 +274,7 @@ export default function LiveScoringScreen() {
         data={pickData}
         keyExtractor={(_, index) => String(index)}
         renderItem={renderPickCard}
-        contentContainerStyle={{ paddingBottom: 10 }}
+        contentContainerStyle={styles.listContent}
         style={styles.list}
       />
     </View>
@@ -261,156 +286,232 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+    backgroundColor: Colors.backgroundLight,
   },
   header: {
-    height: 185,
     width: '100%',
-    justifyContent: 'flex-start',
+    paddingTop: 54,
+    paddingBottom: 16,
     alignItems: 'center',
-    paddingTop: 50,
   },
   backButton: {
     position: 'absolute',
-    left: 20,
-    top: 50,
+    left: 16,
+    top: 54,
+    zIndex: 10,
   },
-  headerTitleText: {
-    fontFamily: Fonts.vanguardMedium,
-    fontSize: FontSizes.base,
-    color: Colors.white,
-  },
-  headerTitleLabel: {
-    fontFamily: Fonts.vanguardExtraBold,
-    fontSize: 23,
-    color: Colors.white,
-  },
-  users: {
+  avatarRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    justifyContent: 'center',
+    gap: 12,
+    paddingTop: 4,
+  },
+  avatarSide: {
+    alignItems: 'center',
+    width: 110,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+  },
+  vsImage: {
+    width: 32,
+    height: 32,
+    marginBottom: 18,
   },
   displayName: {
     fontFamily: Fonts.robotoCondensedBold,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.white,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  stakesRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  stakePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 5,
+  },
+  stakeLabel: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.xs,
+    color: 'rgba(255,255,255,0.7)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  stakeValue: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.md,
+    color: Colors.white,
+    maxWidth: 100,
   },
   progressBar: {
-    width: '90%',
-    height: 20,
-    borderRadius: 8.5,
-    backgroundColor: '#80C6FF',
+    width: '85%',
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   progressBarSide: {
-    borderRadius: 8.5,
-    height: 20,
+    borderRadius: 12,
+    height: 24,
     position: 'absolute',
     top: 0,
     overflow: 'hidden',
   },
   progressBarFill: {
     width: '100%',
-    height: 20,
+    height: 24,
+  },
+  scoreTally: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  scoreTallyText: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.md,
+    color: Colors.white,
+    textAlign: 'center',
   },
   list: {
-    backgroundColor: Colors.white,
-    height: '100%',
+    flex: 1,
     width: '100%',
   },
-  playerCard: {
-    width: '100%',
+  listContent: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 30,
+  },
+  battleCard: {
     backgroundColor: Colors.white,
-    height: 124,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  roundPill: {
+    backgroundColor: Colors.backgroundDark,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  playerPhotoUser: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
+  roundPillText: {
+    fontFamily: Fonts.arnoldSans,
+    fontSize: FontSizes.xs,
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
-  playerPhotoOpp: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
+  battleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+  },
+  playerSide: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  winningSide: {
+    backgroundColor: 'rgba(5,208,123,0.08)',
+  },
+  trophyIcon: {
+    marginBottom: 2,
   },
   playerThumbnail: {
-    width: 90,
-    height: 90,
-  },
-  scoreCircle: {
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    borderColor: Colors.black,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    zIndex: 99999,
-  },
-  userScorePosition: {
-    left: 60,
-    top: 60,
-  },
-  oppScorePosition: {
-    right: 60,
-    top: 60,
-  },
-  scoreText: {
-    fontFamily: Fonts.vanguardBold,
-    color: Colors.black,
-    fontSize: 25,
-    textAlign: 'center',
-    position: 'relative',
-    top: -3,
-    width: 35,
-    zIndex: 9999,
-  },
-  question: {
-    fontFamily: Fonts.vanguardMedium,
-    fontSize: FontSizes.lg,
-    color: 'rgb(99,110,127)',
-    paddingBottom: 5,
+    width: 72,
+    height: 72,
+    borderRadius: 8,
   },
   playerName: {
     fontFamily: Fonts.vanguardBold,
     color: Colors.black,
-    fontSize: FontSizes.xxl,
+    fontSize: FontSizes.base,
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  winnerName: {
+    color: Colors.successGreen,
+  },
+  loserName: {
+    opacity: 0.45,
+  },
+  scoreBadge: {
+    marginTop: 6,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: Colors.neutralLight,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  winnerScoreBadge: {
+    borderColor: Colors.successGreen,
+    backgroundColor: 'rgba(5,208,123,0.1)',
+  },
+  scoreText: {
+    fontFamily: Fonts.vanguardExtraBold,
+    color: Colors.black,
+    fontSize: 22,
+    textAlign: 'center',
+    width: 42,
+  },
+  winnerScoreText: {
+    color: Colors.successGreen,
+  },
+  gameStatusText: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.xs,
+    color: Colors.neutralMid,
+    marginTop: 4,
     textAlign: 'center',
   },
-  tierType: {
-    fontFamily: Fonts.vanguardMedium,
-    fontSize: 14,
-    letterSpacing: 1,
-    paddingVertical: 3,
-  },
-  winnerHighlight: {
-    height: '100%',
-    width: '50%',
-    position: 'absolute',
-    top: 0,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  vsDivider: {
     alignItems: 'center',
-    width: '100%',
-    height: 20,
-    borderTopColor: Colors.neutralLight,
-    borderTopWidth: 1,
-    borderBottomColor: Colors.neutralLight,
-    borderBottomWidth: 1,
-    paddingHorizontal: 15,
+    justifyContent: 'center',
+    width: 36,
+    paddingVertical: 8,
   },
-  gameTime: {
-    fontFamily: Fonts.robotoCondensedRegular,
-    fontSize: FontSizes.sm,
+  vsLine: {
+    width: 1.5,
+    height: 20,
+    backgroundColor: Colors.neutralLight,
+  },
+  vsCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.backgroundDark,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  vsText: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: 10,
+    color: Colors.white,
+    letterSpacing: 1,
   },
 });

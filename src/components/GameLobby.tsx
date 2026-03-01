@@ -128,7 +128,7 @@ export default function GameLobby({ onJoinSuccess }: GameLobbyProps) {
     <View style={styles.container}>
       <ScrollView
         style={{ width: '100%' }}
-        contentContainerStyle={{ alignItems: 'center', justifyContent: 'flex-start', paddingBottom: 40 }}
+        contentContainerStyle={{ alignItems: 'center', justifyContent: 'flex-start', paddingBottom: 120 }}
         bounces={false}
       >
         <View style={styles.slatesContainer}>

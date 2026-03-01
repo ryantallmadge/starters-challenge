@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   // Balance

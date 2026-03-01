@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,10 +12,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/authStore';
 import { Colors, Fonts, FontSizes, Spacing } from '../../src/theme';
 import { getAvatarSource, getAvatarName, avatarKeys } from '../../src/utils/avatarImages';
+import WelcomeCelebration from '../../src/components/WelcomeCelebration';
 
 export default function PickAvatarScreen() {
   const saveAvatar = useAuthStore((s) => s.saveAvatar);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  const handleWelcomeFinish = useCallback(() => {
+    setShowWelcome(false);
+  }, []);
 
   const renderAvatarGrid = () => {
     const rows: React.ReactNode[] = [];
@@ -81,6 +87,8 @@ export default function PickAvatarScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {showWelcome && <WelcomeCelebration onFinish={handleWelcomeFinish} />}
     </LinearGradient>
   );
 }

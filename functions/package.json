@@ -16,7 +16,8 @@
     "script:clear-drafts": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/clearDrafts.ts",
     "script:mock-slate": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/createMockBasketballSlate.ts",
     "script:opponent-auto-pick": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/opponentAutoPick.ts",
-    "script:bonus-coins": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/addBonusCoins.ts"
+    "script:bonus-coins": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/addBonusCoins.ts",
+    "script:mock-score": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/mockScoreSlate.ts"
   },
   "dependencies": {
     "axios": "^1.7.0",

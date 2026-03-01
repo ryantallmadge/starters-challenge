@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
-import { Image, StyleSheet, View, Text } from 'react-native';
+import { Image, Platform, StyleSheet, View, Text } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts, FontSizes } from '../../../src/theme';
 import { useAuthStore } from '../../../src/stores/authStore';
 
@@ -18,8 +19,8 @@ function CoinTabIcon({ focused }: { focused: boolean }) {
     <View style={styles.coinIconContainer}>
       <MaterialIcons
         name="toll"
-        size={28}
-        color={focused ? '#FFD700' : Colors.neutralTabUnselected}
+        size={26}
+        color={focused ? '#FFD700' : Colors.neutralMid}
       />
       <View style={[styles.coinBadge, focused && styles.coinBadgeFocused]}>
         <Text style={[styles.coinBadgeText, focused && styles.coinBadgeTextFocused]}>
@@ -31,26 +32,29 @@ function CoinTabIcon({ focused }: { focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(insets.bottom, 12);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          { bottom: bottomOffset },
+        ],
         tabBarActiveTintColor: Colors.primaryBlueLink,
-        tabBarInactiveTintColor: Colors.neutralTabUnselected,
+        tabBarInactiveTintColor: Colors.neutralMid,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabBarItem,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Lobby',
-          tabBarIcon: ({ focused }) => (
-            <MaterialIcons
-              name="stadium"
-              size={28}
-              color={focused ? Colors.primaryBlueLink : Colors.neutralTabUnselected}
-            />
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="stadium" size={26} color={color} />
           ),
         }}
       />
@@ -80,20 +84,30 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: Colors.white,
-    height: 90,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: -3 },
-    shadowColor: Colors.neutralShadow,
-    shadowOpacity: 0.22,
+    position: 'absolute',
+    marginHorizontal: 40,
+    height: 68,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 22,
     borderTopWidth: 0,
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 10,
+    paddingBottom: 0,
+    ...Platform.select({
+      android: { paddingBottom: 0 },
+    }),
+  },
+  tabBarItem: {
+    paddingVertical: 8,
   },
   tabLabel: {
     fontFamily: Fonts.robotoCondensedBold,
     fontSize: FontSizes.sm,
     textTransform: 'uppercase',
-    paddingTop: 8,
+    marginTop: 2,
   },
   coinIconContainer: {
     alignItems: 'center',

@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { StyleSheet, Text, View, Image } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { Colors, Fonts, FontSizes } from '../../src/theme';
-import AnimatedLogoGlow from '../../src/components/AnimatedLogoGlow';
+import FloatingAvatarMarquee from '../../src/components/FloatingAvatarMarquee';
+import AuthInput from '../../src/components/AuthInput';
+import GradientButton from '../../src/components/GradientButton';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -33,79 +30,101 @@ export default function SignupScreen() {
 
   return (
     <LinearGradient colors={['rgb(0,81,255)', 'rgb(0,157,255)']} style={styles.container}>
+      <FloatingAvatarMarquee />
+
+      {/* Decorative sport icons */}
+      <View style={styles.sportIconsLayer} pointerEvents="none">
+        <MaterialIcons name="sports-football" size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 70, right: 5 }} />
+        <MaterialIcons name="sports-basketball" size={50} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 130, left: -8 }} />
+        <MaterialIcons name="sports-baseball" size={44} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 140, right: 20 }} />
+        <MaterialIcons name="sports-hockey" size={52} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 60, left: 15 }} />
+        <MaterialIcons name="emoji-events" size={40} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 220, right: '40%' }} />
+      </View>
+
       <View style={styles.content}>
-        <AnimatedLogoGlow />
-
-        <View style={{ height: 30 }} />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Please Enter A Display Name"
-          placeholderTextColor={Colors.grey}
-          autoCapitalize="none"
-          returnKeyType="done"
-          onChangeText={setDisplayName}
-          value={displayName}
+        <Image
+          source={require('../../assets/images/starterslogo.png')}
+          style={styles.logo}
         />
 
-        <View style={{ height: 10 }} />
+        <Animated.Text
+          entering={FadeInDown.delay(100).duration(600)}
+          style={styles.tagline}
+        >
+          JOIN THE DRAFT
+        </Animated.Text>
+
+        <View style={{ height: 28 }} />
+
+        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.fullWidth}>
+          <AuthInput
+            icon="person-outline"
+            placeholder="Display Name"
+            autoCapitalize="none"
+            returnKeyType="done"
+            onChangeText={setDisplayName}
+            value={displayName}
+          />
+        </Animated.View>
+
+        <View style={{ height: 12 }} />
 
         {displayName ? (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor={Colors.grey}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            returnKeyType="done"
-            onChangeText={setEmail}
-            value={email}
-          />
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.fullWidth}>
+            <AuthInput
+              icon="mail-outline"
+              placeholder="Email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              returnKeyType="done"
+              onChangeText={setEmail}
+              value={email}
+            />
+          </Animated.View>
         ) : null}
 
-        <View style={{ height: 10 }} />
+        {displayName ? <View style={{ height: 12 }} /> : null}
 
         {email ? (
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor={Colors.grey}
-            secureTextEntry
-            returnKeyType="done"
-            onChangeText={setPassword}
-            value={password}
-          />
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.fullWidth}>
+            <AuthInput
+              icon="lock-outline"
+              placeholder="Password"
+              secureTextEntry
+              returnKeyType="done"
+              onChangeText={setPassword}
+              value={password}
+            />
+          </Animated.View>
         ) : null}
 
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <Animated.Text entering={FadeInDown.duration(300)} style={styles.errorText}>
+            {error}
+          </Animated.Text>
         ) : null}
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 24 }} />
 
-        <TouchableOpacity
-          onPress={handleSignUp}
-          disabled={!password || loading}
-          style={[
-            styles.signUpButton,
-            { backgroundColor: password && !loading ? Colors.primaryBlue : Colors.grey },
-          ]}
-        >
-          {loading ? (
-            <ActivityIndicator color={Colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Sign Up</Text>
-          )}
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.fullWidth}>
+          <GradientButton
+            label="Sign Up"
+            onPress={handleSignUp}
+            colors={['rgb(255,92,42)', 'rgb(255,193,0)']}
+            disabled={!password}
+            loading={loading}
+          />
+        </Animated.View>
 
         <View style={{ height: 20 }} />
 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.returnButton}
-        >
-          <Text style={styles.buttonText}>Return To Sign In</Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.fullWidth}>
+          <GradientButton
+            label="Return To Sign In"
+            onPress={() => router.back()}
+            colors={['rgb(11,152,93)', 'rgb(5,208,123)']}
+          />
+        </Animated.View>
       </View>
     </LinearGradient>
   );
@@ -114,56 +133,48 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.backgroundDark,
+  },
+  sportIconsLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   content: {
-    width: '100%',
-    height: '100%',
-    paddingHorizontal: 20,
+    flex: 1,
+    paddingHorizontal: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
-  input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: Colors.white,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    textAlign: 'left',
-    color: Colors.black,
+  logo: {
+    width: 220,
+    height: 170,
+    resizeMode: 'contain',
   },
-  signUpButton: {
-    width: '100%',
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  buttonText: {
-    textAlign: 'center',
-    fontSize: FontSizes.xxl,
-    fontFamily: Fonts.vanguardBold,
-    textTransform: 'uppercase',
+  tagline: {
+    fontFamily: Fonts.vanguardExtraBold,
+    fontSize: FontSizes.title,
     color: Colors.white,
+    letterSpacing: 4,
+    textAlign: 'center',
+    marginTop: 12,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  fullWidth: {
+    width: '100%',
   },
   errorText: {
     color: Colors.white,
-    backgroundColor: 'rgba(255,59,48,0.8)',
+    backgroundColor: 'rgba(255,59,48,0.85)',
     width: '100%',
     textAlign: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     fontSize: FontSizes.md,
     fontFamily: Fonts.robotoCondensedRegular,
     overflow: 'hidden',
-  },
-  returnButton: {
-    width: '100%',
-    backgroundColor: Colors.successGreenDark,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 10,
+    marginTop: 12,
   },
 });

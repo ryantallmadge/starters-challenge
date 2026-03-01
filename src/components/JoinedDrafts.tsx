@@ -132,15 +132,15 @@ export default function JoinedDrafts() {
   const getTierWins = (contest: CurrentContest) => {
     let userWins = 0;
     let oppWins = 0;
-    const picks = contest.picks;
-    const oppPicks = contest.oppenent?.picks;
+    const picks = contest.picks || {};
+    const oppPicks = contest.oppenent?.picks || {};
     const players = contest.slate?.players;
-    if (!picks || !oppPicks || !players) return { userWins, oppWins };
+    if (!players) return { userWins, oppWins };
 
-    const rounds = Math.min(picks.length, oppPicks.length);
+    const rounds = contest.slate?.tiers?.length || 0;
     for (let i = 0; i < rounds; i++) {
-      const up = players[picks[i]] as any;
-      const op = players[oppPicks[i]] as any;
+      const up = players[(picks as any)[i]] as any;
+      const op = players[(oppPicks as any)[i]] as any;
       if (!up || !op) continue;
       const uScore = Number(up.score || 0);
       const oScore = Number(op.score || 0);
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   emptyState: {
