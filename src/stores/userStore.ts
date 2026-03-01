@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { doc, getDoc, collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../services/firebase';
 import { searchUsers as searchUsersApi } from '../services/api';
 import type { UserData, ContestArchive, PrizeData } from '../types';
@@ -39,14 +39,20 @@ export const useUserStore = create<UserState>((set) => ({
   },
 
   fetchUserHistory: async (uid) => {
-    const q = query(
-      collection(firestore, 'USERS', uid, 'CONTEST_ARCHIVES'),
-      where('created_at', '<=', new Date()),
-      orderBy('created_at', 'desc')
-    );
-    const snap = await getDocs(q);
-    const archives = snap.docs.map((d) => d.data() as ContestArchive);
-    set({ userHistory: archives });
+    try {
+      const q = query(
+        collection(firestore, 'USERS', uid, 'CONTEST_ARCHIVES'),
+        orderBy('created_at', 'desc')
+      );
+      const snap = await getDocs(q);
+      const archives = snap.docs.map((d) => ({ ...d.data(), id: d.id }) as ContestArchive);
+      set({ userHistory: archives });
+    } catch (e) {
+      console.warn('fetchUserHistory failed, falling back to unordered:', e);
+      const snap = await getDocs(collection(firestore, 'USERS', uid, 'CONTEST_ARCHIVES'));
+      const archives = snap.docs.map((d) => ({ ...d.data(), id: d.id }) as ContestArchive);
+      set({ userHistory: archives });
+    }
   },
 
   fetchUserPrizes: async (uid) => {

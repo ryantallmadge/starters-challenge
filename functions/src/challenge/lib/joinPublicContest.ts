@@ -31,23 +31,30 @@ export async function joinPublicContestLogic(
   const userContestData = userContestSnap.data();
   console.log(`${tag} existing user_contests keys: ${userContestData?.contests ? Object.keys(userContestData.contests).length : 0}`);
 
-  if (userContestData?.contests && slateId) {
-    for (const [key, contest] of Object.entries(userContestData.contests) as [string, any][]) {
-      const contestSlateId = contest.slate?.id || contest.slate_id;
-      console.log(`${tag} checking existing contest ${key}: slateId=${contestSlateId}, stage=${contest.stage}`);
-      if (contestSlateId === slateId && (contest.stage === "draft" || contest.stage === "pending")) {
-        console.log(`${tag} NOOP: already has active contest ${key} for this slate`);
-        return { noop: "You already have an active contest for this slate" };
-      }
-    }
-  }
-
   const slateRef = slateId
     ? firestore.collection(Collections.AVAILABLE_SLATES).doc(slateId)
     : firestore.collection(Collections.SLATES).doc("current");
   const slateSnap = await slateRef.get();
   const slateData = slateSnap.data();
   const entryCost = slateData?.entry_cost as number | undefined;
+  const singleEntry = slateData?.single_entry as boolean | undefined;
+
+  if (userContestData?.contests && slateId) {
+    for (const [key, contest] of Object.entries(userContestData.contests) as [string, any][]) {
+      const contestSlateId = contest.slate?.id || contest.slate_id;
+      console.log(`${tag} checking existing contest ${key}: slateId=${contestSlateId}, stage=${contest.stage}`);
+      if (contestSlateId === slateId) {
+        if (singleEntry) {
+          console.log(`${tag} NOOP: single_entry slate — user already entered via contest ${key}`);
+          return { noop: "You have already entered this daily challenge" };
+        }
+        if (contest.stage === "draft" || contest.stage === "pending") {
+          console.log(`${tag} NOOP: already has active contest ${key} for this slate`);
+          return { noop: "You already have an active contest for this slate" };
+        }
+      }
+    }
+  }
   console.log(`${tag} slateExists=${slateSnap.exists}, entryCost=${entryCost}, slateData.entry_cost=${slateData?.entry_cost} (type=${typeof slateData?.entry_cost})`);
 
   if (entryCost && entryCost > 0) {

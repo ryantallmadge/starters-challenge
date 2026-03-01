@@ -76,13 +76,27 @@ async function scoreContest(params: {
     return;
   }
 
-  const picks = currentContest.picks as string[] | undefined;
-  if (!picks?.length) return;
+  const picksRaw = currentContest.picks as Record<string, string> | string[] | undefined;
+  const picks = picksRaw
+    ? Array.isArray(picksRaw)
+      ? picksRaw
+      : Object.keys(picksRaw)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((k) => (picksRaw as Record<string, string>)[k])
+    : [];
+  if (!picks.length) return;
 
   const slate = currentContest.slate as Record<string, unknown>;
   const slatePlayers = slate.players as Record<string, Record<string, unknown>>;
   const oppenent = currentContest.oppenent as Record<string, unknown>;
-  const opponentPicks = oppenent.picks as string[];
+  const oppPicksRaw = oppenent.picks as Record<string, string> | string[] | undefined;
+  const opponentPicks = oppPicksRaw
+    ? Array.isArray(oppPicksRaw)
+      ? oppPicksRaw
+      : Object.keys(oppPicksRaw)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((k) => (oppPicksRaw as Record<string, string>)[k])
+    : [];
 
   for (let j = 0; j < picks.length; j++) {
     const userPick = picks[j];
@@ -143,13 +157,29 @@ async function scoreContest(params: {
     .get();
   const opponentArchiveVal = opponentContestSnap.data()?.contests?.[contestId];
 
+  const archiveExtras = {
+    user_won: true,
+    entry_cost: (slate.entry_cost as number) ?? 0,
+    payout: (slate.payout as number) ?? 0,
+    slate_name: (currentContest.slate_name as string) ?? "",
+    slate_id: (slate.id as string) ?? "",
+    sport: (slate.sport as string) ?? "",
+  };
+
   batch.set(
     fs
       .collection(Collections.USERS)
       .doc(userId)
       .collection("CONTEST_ARCHIVES")
       .doc(contestId),
-    { ...userArchiveVal, tiers_won: tiers.user, created_at: new Date() }
+    {
+      ...userArchiveVal,
+      ...archiveExtras,
+      user_won: winnerId === userId,
+      tiers_won: tiers.user,
+      opponent_tiers_won: tiers.oppenent,
+      created_at: new Date(),
+    }
   );
   batch.set(
     fs
@@ -157,7 +187,14 @@ async function scoreContest(params: {
       .doc(opponentId)
       .collection("CONTEST_ARCHIVES")
       .doc(contestId),
-    { ...opponentArchiveVal, tiers_won: tiers.oppenent, created_at: new Date() }
+    {
+      ...opponentArchiveVal,
+      ...archiveExtras,
+      user_won: winnerId === opponentId,
+      tiers_won: tiers.oppenent,
+      opponent_tiers_won: tiers.user,
+      created_at: new Date(),
+    }
   );
 
   await Promise.all([

@@ -61,6 +61,8 @@ export interface Slate {
   type?: string;
   entry_cost?: number;
   payout?: number;
+  slate_type?: "daily_free";
+  single_entry?: boolean;
 }
 
 export interface DraftState {

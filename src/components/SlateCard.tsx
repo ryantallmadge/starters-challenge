@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,6 +31,11 @@ const SPORT_CONFIG: Record<string, { icon: string; gradient: readonly [string, s
     gradient: ['#6A1B9A', '#4A148C'] as const,
     accent: '#CE93D8',
   },
+  daily_free: {
+    icon: 'star',
+    gradient: ['#FFD700', '#FF8F00'] as const,
+    accent: '#FFF8E1',
+  },
   default: {
     icon: 'sports',
     gradient: [Colors.primaryBlue, Colors.primaryBlueLight] as const,
@@ -51,24 +56,55 @@ function formatTimeUntil(startTime: string): string {
 
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
   if (hours > 24) {
     const days = Math.floor(hours / 24);
     return `${days}d ${hours % 24}h`;
   }
   if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
+function isUnderOneHour(startTime: string): boolean {
+  const diff = new Date(startTime).getTime() - Date.now();
+  return diff > 0 && diff < 60 * 60 * 1000;
 }
 
 interface SlateCardProps {
   slate: AvailableSlate;
   onPress: (slate: AvailableSlate) => void;
+  entered?: boolean;
 }
 
-export default function SlateCard({ slate, onPress }: SlateCardProps) {
+export default function SlateCard({ slate, onPress, entered }: SlateCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const config = getSportConfig(slate.sport);
+  const [, setTick] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isDailyFree = slate.slate_type === 'daily_free';
+  const config = isDailyFree ? SPORT_CONFIG.daily_free : getSportConfig(slate.sport);
   const tierCount = slate.tiers?.length || 0;
+
+  useEffect(() => {
+    function check() {
+      if (isUnderOneHour(slate.start_time)) {
+        if (!intervalRef.current) {
+          intervalRef.current = setInterval(() => setTick((t) => t + 1), 1000);
+        }
+      } else if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    check();
+    const hourCheck = setInterval(check, 30_000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      clearInterval(hourCheck);
+    };
+  }, [slate.start_time]);
 
   const handlePreview = () => {
     setExpanded((prev) => !prev);
@@ -84,10 +120,17 @@ export default function SlateCard({ slate, onPress }: SlateCardProps) {
           style={[styles.card, expanded && styles.cardExpanded]}
         >
           <View style={styles.topRow}>
-            <View style={[styles.sportBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-              <MaterialIcons name={config.icon as any} size={16} color={Colors.white} />
-              <Text style={styles.sportText}>{slate.sport.toUpperCase()}</Text>
-            </View>
+            {isDailyFree ? (
+              <View style={[styles.sportBadge, styles.dailyFreeBadge]}>
+                <MaterialIcons name="star" size={16} color="#FFD700" />
+                <Text style={[styles.sportText, styles.dailyFreeBadgeText]}>DAILY FREE</Text>
+              </View>
+            ) : (
+              <View style={[styles.sportBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                <MaterialIcons name={config.icon as any} size={16} color={Colors.white} />
+                <Text style={styles.sportText}>{slate.sport.toUpperCase()}</Text>
+              </View>
+            )}
             <View style={[styles.timeBadge, { backgroundColor: 'rgba(0,0,0,0.25)' }]}>
               <MaterialIcons name="schedule" size={13} color={config.accent} />
               <Text style={[styles.timeText, { color: config.accent }]}>
@@ -120,7 +163,18 @@ export default function SlateCard({ slate, onPress }: SlateCardProps) {
             </View>
           </View>
 
-          {(slate.entry_cost || slate.payout) ? (
+          {isDailyFree ? (
+            <View style={styles.coinRow}>
+              <View style={[styles.coinPill, styles.dailyFreeEntryPill]}>
+                <MaterialIcons name="lock-open" size={14} color="#4CAF50" />
+                <Text style={[styles.coinText, { color: '#4CAF50' }]}>FREE ENTRY</Text>
+              </View>
+              <View style={[styles.coinPill, styles.dailyFreePayoutPill]}>
+                <MaterialIcons name="emoji-events" size={14} color="#FFD700" />
+                <Text style={styles.coinText}>WIN {slate.payout} COINS</Text>
+              </View>
+            </View>
+          ) : (slate.entry_cost || slate.payout) ? (
             <View style={styles.coinRow}>
               {slate.entry_cost ? (
                 <View style={styles.coinPill}>
@@ -152,9 +206,18 @@ export default function SlateCard({ slate, onPress }: SlateCardProps) {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.joinRow}>
-              <Text style={styles.joinText}>TAP TO JOIN</Text>
-              <MaterialIcons name="arrow-forward" size={16} color={Colors.white} />
+            <View style={[styles.joinRow, entered && styles.joinRowEntered]}>
+              {entered ? (
+                <>
+                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
+                  <Text style={[styles.joinText, styles.joinTextEntered]}>ENTERED</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.joinText}>TAP TO JOIN</Text>
+                  <MaterialIcons name="arrow-forward" size={16} color={Colors.white} />
+                </>
+              )}
             </View>
           </View>
         </LinearGradient>
@@ -321,6 +384,25 @@ const styles = StyleSheet.create({
   coinPillPayout: {
     backgroundColor: 'rgba(255,215,0,0.2)',
   },
+  dailyFreeBadge: {
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.5)',
+  },
+  dailyFreeBadgeText: {
+    color: '#FFF8E1',
+    letterSpacing: 2,
+  },
+  dailyFreeEntryPill: {
+    backgroundColor: 'rgba(76,175,80,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(76,175,80,0.4)',
+  },
+  dailyFreePayoutPill: {
+    backgroundColor: 'rgba(255,215,0,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.5)',
+  },
   coinText: {
     fontFamily: Fonts.robotoCondensedBold,
     fontSize: FontSizes.xs,
@@ -361,6 +443,12 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.base,
     color: Colors.white,
     letterSpacing: 2,
+  },
+  joinRowEntered: {
+    backgroundColor: 'rgba(76,175,80,0.2)',
+  },
+  joinTextEntered: {
+    color: '#4CAF50',
   },
 
   // Preview panel

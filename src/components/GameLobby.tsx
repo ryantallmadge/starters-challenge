@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -34,12 +34,30 @@ export default function GameLobby({ onJoinSuccess }: GameLobbyProps) {
   const joinPublicContest = useContestStore((s) => s.joinPublicContest);
   const slates = useSlateStore((s) => s.slates);
   const slatesLoading = useSlateStore((s) => s.loading);
+  const userContests = useContestStore((s) => s.userContests);
 
   const [selectedSlate, setSelectedSlate] = useState<AvailableSlate | null>(null);
   const [joining, setJoining] = useState(false);
 
   const incomingInvites = user?.incoming_invites as Record<string, any> | undefined;
   const outgoingInvites = user?.outgoing_invites as Record<string, any> | undefined;
+
+  const dailyFreeSlate = useMemo(
+    () => slates.find((s) => s.slate_type === 'daily_free') ?? null,
+    [slates],
+  );
+  const regularSlates = useMemo(
+    () => slates.filter((s) => s.slate_type !== 'daily_free'),
+    [slates],
+  );
+
+  const hasEnteredDailyFree = useMemo(() => {
+    if (!dailyFreeSlate || !userContests?.contests) return false;
+    return Object.values(userContests.contests).some((c: any) => {
+      const cSlateId = c.slate?.id || c.slate_id;
+      return cSlateId === dailyFreeSlate.id;
+    });
+  }, [dailyFreeSlate, userContests]);
 
   const handleSlatePress = (slate: AvailableSlate) => {
     setSelectedSlate(slate);
@@ -135,9 +153,51 @@ export default function GameLobby({ onJoinSuccess }: GameLobbyProps) {
           {slatesLoading ? (
             <ActivityIndicator size="large" color={Colors.white} style={{ paddingVertical: 40 }} />
           ) : slates.length > 0 ? (
-            slates.map((slate) => (
-              <SlateCard key={slate.id} slate={slate} onPress={handleSlatePress} />
-            ))
+            <>
+              {dailyFreeSlate && (
+                <>
+                  <View style={styles.sectionHeader}>
+                    <MaterialIcons name="star" size={16} color="#FFD700" />
+                    <Text style={styles.sectionTitle}>DAILY CHALLENGE</Text>
+                  </View>
+                  {hasEnteredDailyFree ? (
+                    <LinearGradient
+                      colors={['#FFD700', '#FF8F00']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.enteredCard}
+                    >
+                      <View style={styles.enteredCardLeft}>
+                        <MaterialIcons name="star" size={20} color="rgba(255,255,255,0.9)" />
+                        <View>
+                          <Text style={styles.enteredCardTitle}>{dailyFreeSlate.name}</Text>
+                          <Text style={styles.enteredCardSub}>Win {dailyFreeSlate.payout} coins</Text>
+                        </View>
+                      </View>
+                      <View style={styles.enteredBadge}>
+                        <MaterialIcons name="check-circle" size={14} color="#4CAF50" />
+                        <Text style={styles.enteredText}>ENTERED</Text>
+                      </View>
+                    </LinearGradient>
+                  ) : (
+                    <SlateCard
+                      key={dailyFreeSlate.id}
+                      slate={dailyFreeSlate}
+                      onPress={handleSlatePress}
+                    />
+                  )}
+                </>
+              )}
+              {regularSlates.length > 0 && dailyFreeSlate && (
+                <View style={styles.sectionHeader}>
+                  <MaterialIcons name="local-fire-department" size={16} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.sectionTitle}>ALL SLATES</Text>
+                </View>
+              )}
+              {regularSlates.map((slate) => (
+                <SlateCard key={slate.id} slate={slate} onPress={handleSlatePress} />
+              ))}
+            </>
           ) : (
             <View style={styles.emptyState}>
               <MaterialIcons name="event-busy" size={48} color="rgba(255,255,255,0.4)" />
@@ -257,6 +317,61 @@ const styles = StyleSheet.create({
   slatesContainer: {
     width: '100%',
     paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.sm,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 2,
+  },
+  enteredCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  enteredCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  enteredCardTitle: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.base,
+    color: Colors.white,
+    textTransform: 'uppercase',
+  },
+  enteredCardSub: {
+    fontFamily: Fonts.robotoCondensedRegular,
+    fontSize: FontSizes.xs,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 1,
+  },
+  enteredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 5,
+  },
+  enteredText: {
+    fontFamily: Fonts.vanguardBold,
+    fontSize: FontSizes.xs,
+    color: '#4CAF50',
+    letterSpacing: 1,
   },
   emptyState: {
     alignItems: 'center',

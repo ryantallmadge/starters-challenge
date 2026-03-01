@@ -69,6 +69,8 @@ export interface AvailableSlate {
   created_at: string;
   entry_cost?: number;
   payout?: number;
+  slate_type?: 'daily_free';
+  single_entry?: boolean;
 }
 
 export interface OpponentData {
@@ -172,6 +174,13 @@ export interface ContestArchive {
   user_won?: boolean;
   picks?: Record<string, PickData>;
   wager?: string;
+  slate_name?: string;
+  slate_id?: string;
+  entry_cost?: number;
+  payout?: number;
+  tiers_won?: number;
+  opponent_tiers_won?: number;
+  sport?: string;
 }
 
 export interface PrizeData {

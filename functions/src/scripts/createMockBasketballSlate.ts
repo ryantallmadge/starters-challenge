@@ -174,6 +174,8 @@ interface SlateDefinition {
   hoursFromNow: number;
   entry_cost: number;
   payout: number;
+  slate_type?: "daily_free";
+  single_entry?: boolean;
   tiers: { question: string; key_stat: string; playerIds: string[] }[];
 }
 
@@ -377,6 +379,29 @@ const SLATE_DEFS: SlateDefinition[] = [
       { question: "Defensive player of the day?", key_stat: "SACK", playerIds: ["ncaa15", "ncaa19", "ncaa23", "ncaa24"] },
     ],
   },
+
+  // ── DAILY FREE ────────────────────────────────────────────────────────────
+  {
+    name: "Daily Free Challenge",
+    sport: "nba",
+    description: "Free to enter, 100 coins to win — one shot per day. Make it count!",
+    game_count: 6,
+    max_entries: 500,
+    entry_count: 132,
+    hoursFromNow: 2,
+    entry_cost: 0,
+    payout: 100,
+    slate_type: "daily_free",
+    single_entry: true,
+    tiers: [
+      { question: "Which superstar goes off tonight?", key_stat: "PPG", playerIds: ["nba1", "nba4", "nba11", "nba14"] },
+      { question: "Which big man dominates the glass?", key_stat: "RPG", playerIds: ["nba5", "nba6", "nba7", "nba18"] },
+      { question: "Which guard dishes the most dimes?", key_stat: "APG", playerIds: ["nba8", "nba9", "nba22", "nba15"] },
+      { question: "Best wing performance?", key_stat: "PPG", playerIds: ["nba3", "nba10", "nba17", "nba21"] },
+      { question: "Which young star breaks out?", key_stat: "PPG", playerIds: ["nba12", "nba23", "nba13", "nba20"] },
+      { question: "Who wins the PG battle?", key_stat: "PPG", playerIds: ["nba2", "nba19", "nba24", "nba16"] },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -449,6 +474,8 @@ function buildSlateFromDef(def: SlateDefinition): {
     created_at: now.toISOString(),
     entry_cost: def.entry_cost,
     payout: def.payout,
+    ...(def.slate_type && { slate_type: def.slate_type }),
+    ...(def.single_entry && { single_entry: def.single_entry }),
   };
 
   const meta = {
@@ -463,6 +490,8 @@ function buildSlateFromDef(def: SlateDefinition): {
     entry_cost: def.entry_cost,
     payout: def.payout,
     created_at: now.toISOString(),
+    ...(def.slate_type && { slate_type: def.slate_type }),
+    ...(def.single_entry && { single_entry: def.single_entry }),
   };
 
   return { slate, meta };

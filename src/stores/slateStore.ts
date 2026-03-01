@@ -9,25 +9,63 @@ interface SlateState {
   setupSlateListener: () => () => void;
 }
 
-export const useSlateStore = create<SlateState>((set) => ({
-  slates: [],
-  loading: true,
+function filterActiveSlates(slates: AvailableSlate[]): AvailableSlate[] {
+  const now = Date.now();
+  return slates.filter((s) => new Date(s.start_time).getTime() > now);
+}
 
-  setupSlateListener: () => {
-    const q = query(
-      collection(firestore, 'AVAILABLE_SLATES'),
-      where('status', '==', 'open')
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const slates = snap.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      })) as AvailableSlate[];
-      slates.sort(
-        (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+export const useSlateStore = create<SlateState>((set, get) => {
+  let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleNextExpiry() {
+    if (expiryTimer) clearTimeout(expiryTimer);
+    expiryTimer = null;
+
+    const now = Date.now();
+    let earliest = Infinity;
+    for (const s of get().slates) {
+      const t = new Date(s.start_time).getTime();
+      if (t > now && t < earliest) earliest = t;
+    }
+
+    if (earliest !== Infinity) {
+      expiryTimer = setTimeout(() => {
+        const active = filterActiveSlates(get().slates);
+        set({ slates: active });
+        scheduleNextExpiry();
+      }, earliest - now + 500);
+    }
+  }
+
+  return {
+    slates: [],
+    loading: true,
+
+    setupSlateListener: () => {
+      const q = query(
+        collection(firestore, 'AVAILABLE_SLATES'),
+        where('status', '==', 'open')
       );
-      set({ slates, loading: false });
-    });
-    return unsub;
-  },
-}));
+      const unsub = onSnapshot(q, (snap) => {
+        const raw = snap.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as AvailableSlate[];
+
+        const slates = filterActiveSlates(raw);
+        slates.sort(
+          (a, b) =>
+            new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        );
+        set({ slates, loading: false });
+        scheduleNextExpiry();
+      });
+
+      return () => {
+        if (expiryTimer) clearTimeout(expiryTimer);
+        expiryTimer = null;
+        unsub();
+      };
+    },
+  };
+});
