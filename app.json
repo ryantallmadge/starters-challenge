@@ -1,30 +1,55 @@
 {
   "expo": {
-    "name": "starter-challenge",
-    "slug": "starter-challenge",
+    "name": "Fanium Challenge",
+    "slug": "fanium-challenge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "fanium-challenge",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0B985D"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fanium.challenge"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#07192A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "package": "com.fanium.challenge"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-image",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/VanguardCF-Bold.otf",
+            "./assets/fonts/VanguardCF-ExtraBold.otf",
+            "./assets/fonts/VanguardCF-Medium.otf",
+            "./assets/fonts/VanguardCF-Regular.otf",
+            "./assets/fonts/VanguardCF-DemiBold.otf",
+            "./assets/fonts/VanguardCF-Heavy.otf",
+            "./assets/fonts/VanguardCF-Light.otf",
+            "./assets/fonts/VanguardCF-Thin.otf",
+            "./assets/fonts/RobotoCondensed-Bold.ttf",
+            "./assets/fonts/RobotoCondensed-Regular.ttf",
+            "./assets/fonts/Arnold Sans.otf"
+          ]
+        }
+      ],
+      "expo-router"
+    ]
   }
 }

@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles -- owner can read/write
+    match /USERS/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /USERS/{userId}/RECORDS/{recordId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+    match /USERS/{userId}/PRIZES/{recordId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+    match /USERS/{userId}/CONTEST_ARCHIVES/{contestId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+    match /USERS/{userId}/COIN_LEDGER/{entryId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Slates -- authenticated read, server-only write
+    match /SLATES/{slateId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Available slates -- authenticated read, server-only write
+    match /AVAILABLE_SLATES/{slateId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // User contests -- owner read, server-only write
+    match /USER_CONTESTS/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Users in contest -- authenticated read, server-only write
+    match /USER_IN_CONTEST/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Leaderboard -- authenticated read, server-only write
+    match /LEADERBOARD/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Tier wins -- authenticated read, server-only write
+    match /USER_TIER_WINS/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Config -- authenticated read (version is public), server-only write
+    match /CONFIG/{docId} {
+      allow read: if request.auth != null || docId == 'version';
+      allow write: if false;
+    }
+
+    // Public lobby -- server-managed
+    match /PUBLIC_LOBBY/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

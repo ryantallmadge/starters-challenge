@@ -1,0 +1,36 @@
+{
+  "name": "functions",
+  "description": "Firebase Cloud Functions for Starters Challenge",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "eslint src/",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "script:seed": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/seedUsers.ts",
+    "script:join-draft": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/joinRandomDraft.ts",
+    "script:clear-drafts": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/clearDrafts.ts",
+    "script:mock-slate": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/createMockBasketballSlate.ts",
+    "script:opponent-auto-pick": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/opponentAutoPick.ts",
+    "script:bonus-coins": "FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=starters-challenge npx tsx src/scripts/addBonusCoins.ts"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "bad-words": "^3.0.4",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^7.0.0",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.0",
+    "@types/uuid": "^9.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.7.0"
+  },
+  "private": true
+}
