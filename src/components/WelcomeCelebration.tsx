@@ -100,6 +100,7 @@ const ICON_BURSTS = [
   { name: 'star', top: '22%', right: '30%', size: 18, delay: 800, color: 'rgba(255,215,0,0.6)' },
   { name: 'sports-basketball', bottom: '32%', left: '25%', size: 20, delay: 900, color: 'rgba(255,255,255,0.4)' },
   { name: 'sports-football', bottom: '35%', right: '22%', size: 18, delay: 1000, color: 'rgba(255,255,255,0.4)' },
+  { name: 'sports-soccer', bottom: '28%', left: '45%', size: 18, delay: 1050, color: 'rgba(255,255,255,0.4)' },
   { name: 'star', top: '35%', left: '12%', size: 16, delay: 1100, color: 'rgba(255,193,0,0.5)' },
   { name: 'star', top: '33%', right: '10%', size: 14, delay: 1200, color: 'rgba(255,193,0,0.5)' },
 ] as const;

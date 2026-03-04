@@ -86,6 +86,7 @@ export async function joinPublicContestLogic(
         user_id: userId,
         slate_id: slateId || null,
         contest_id: contestId,
+        created_at: new Date().toISOString(),
       });
       return "new";
     }
@@ -137,6 +138,7 @@ export async function joinPublicContestLogic(
             slate_id: slateId || null,
             slate: slateData || null,
             slate_name: slateData?.name || "",
+            created_at: new Date().toISOString(),
           },
         },
       }, { merge: true }),

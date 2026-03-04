@@ -38,6 +38,7 @@ export default function SignupScreen() {
         <MaterialIcons name="sports-basketball" size={50} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 130, left: -8 }} />
         <MaterialIcons name="sports-baseball" size={44} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 140, right: 20 }} />
         <MaterialIcons name="sports-hockey" size={52} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 60, left: 15 }} />
+        <MaterialIcons name="sports-soccer" size={46} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 180, left: '35%' }} />
         <MaterialIcons name="emoji-events" size={40} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 220, right: '40%' }} />
       </View>
 

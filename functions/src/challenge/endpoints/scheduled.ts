@@ -4,6 +4,8 @@ import { moveSlates } from "../lib/moveSlates.js";
 import { runStandings } from "../lib/runStandings.js";
 import { updateLeaderboard } from "../lib/updateLeaderboard.js";
 import { currentTierWins } from "../lib/currentTierWins.js";
+import { fillStalePendingDrafts } from "../lib/fillStalePendingDrafts.js";
+import { createNextDaySlates, createDailyFreeSlates } from "../lib/createSlatesFromApi.js";
 
 export const runScoreLiveSlate = onSchedule(
   {
@@ -54,6 +56,41 @@ export const setTierWinsScheduled = onSchedule(
   },
   async () => {
     await currentTierWins();
+  }
+);
+
+export const fillStalePendingDraftsScheduled = onSchedule(
+  {
+    schedule: "*/1 * * * *",
+    timeZone: "America/New_York",
+    timeoutSeconds: 120,
+  },
+  async () => {
+    await fillStalePendingDrafts();
+  }
+);
+
+export const createNextDaySlatesScheduled = onSchedule(
+  {
+    schedule: "0 20 * * *",
+    timeZone: "America/New_York",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+  },
+  async () => {
+    await createNextDaySlates();
+  }
+);
+
+export const createDailyFreeChallengeScheduled = onSchedule(
+  {
+    schedule: "0 4 * * *",
+    timeZone: "America/New_York",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+  },
+  async () => {
+    await createDailyFreeSlates();
   }
 );
 

@@ -91,4 +91,17 @@ export const scoringSystems: ScoringSystemsBySport = {
     complete_game: { name: "Complete Game", score: 2.5, key: "pitching.overall.games.complete" },
     shut_out: { name: "Shutout", score: 2.5, key: "pitching.overall.games.shutout" },
   },
+  soccer: {
+    goal: { name: "Goal", score: 10, key: "goals.total" },
+    assist: { name: "Assist", score: 6, key: "goals.assists" },
+    shot_on_target: { name: "Shot on Target", score: 2, key: "shots.on" },
+    key_pass: { name: "Key Pass", score: 3, key: "passes.key" },
+    tackle: { name: "Tackle", score: 2, key: "tackles.total" },
+    interception: { name: "Interception", score: 2, key: "tackles.interceptions" },
+    save: { name: "Save", score: 3, key: "goals.saves" },
+    clean_sheet: { name: "Clean Sheet", score: 5, key: "goals.conceded", value: "0" },
+    yellow_card: { name: "Yellow Card", score: -1, key: "cards.yellow" },
+    red_card: { name: "Red Card", score: -3, key: "cards.red" },
+    goals_conceded: { name: "Goals Conceded", score: -2, key: "goals.conceded" },
+  },
 };

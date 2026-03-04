@@ -21,7 +21,8 @@ export async function moveSlates(): Promise<void> {
     const upcomingSlateVal = upcomingSlateSnap.data();
     if (!upcomingSlateVal || userContestsSnap.empty) return;
 
-    const removeDrafts: Array<Promise<FirebaseFirestore.WriteResult>> = [];
+    const removeContests: Array<Promise<FirebaseFirestore.WriteResult>> = [];
+    const staleLobbyIds = new Set<string>();
 
     for (const doc of userContestsSnap.docs) {
       const data = doc.data();
@@ -29,20 +30,30 @@ export async function moveSlates(): Promise<void> {
       if (!contests) continue;
 
       for (const [contestId, contest] of Object.entries(contests)) {
-        if (contest.stage === "draft") {
-          console.log(`Removing draft ${contestId} for ${doc.id}`);
-          removeDrafts.push(
+        if (contest.stage === "draft" || contest.stage === "pending") {
+          console.log(`Removing ${contest.stage} contest ${contestId} for ${doc.id}`);
+          removeContests.push(
             firestore.collection(Collections.USER_CONTESTS).doc(doc.id).update({
               [`contests.${contestId}`]: FieldValue.delete(),
             })
           );
+          if (contest.stage === "pending") {
+            const slateId = (contest.slate_id as string) || (contest.slate as Record<string, unknown>)?.id as string | undefined;
+            staleLobbyIds.add(slateId || "WAITING");
+          }
         }
       }
     }
 
+    const lobbyCleanups = Array.from(staleLobbyIds).map((lobbyDocId) => {
+      console.log(`Cleaning up stale lobby entry: ${lobbyDocId}`);
+      return firestore.collection(Collections.PUBLIC_LOBBY).doc(lobbyDocId).delete();
+    });
+
     console.log(`Moving ${upcomingSlateVal.id} to current`);
     await Promise.all([
-      ...removeDrafts,
+      ...removeContests,
+      ...lobbyCleanups,
       firestore
         .collection(Collections.SLATES)
         .doc("current")

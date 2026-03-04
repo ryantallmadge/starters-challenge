@@ -115,7 +115,14 @@ export async function pick(
   const onTheClock: string = order[currentPick];
   const date = new Date();
   const now = date.toISOString();
-  date.setMinutes(date.getMinutes() + MINUTES_DRAFT_CLOCK);
+
+  const botUserId = userContest.bot_user_id as string | undefined;
+  const isBotNext = botUserId && onTheClock === botUserId;
+  if (isBotNext) {
+    date.setSeconds(date.getSeconds() + 5);
+  } else {
+    date.setMinutes(date.getMinutes() + MINUTES_DRAFT_CLOCK);
+  }
   const pickTime = date.toISOString();
 
   const draftUpdate = {

@@ -31,6 +31,11 @@ const SPORT_CONFIG: Record<string, { icon: string; gradient: readonly [string, s
     gradient: ['#6A1B9A', '#4A148C'] as const,
     accent: '#CE93D8',
   },
+  soccer: {
+    icon: 'sports-soccer',
+    gradient: ['#00897B', '#00695C'] as const,
+    accent: '#80CBC4',
+  },
   daily_free: {
     icon: 'star',
     gradient: ['#FFD700', '#FF8F00'] as const,

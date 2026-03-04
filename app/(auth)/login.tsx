@@ -43,6 +43,7 @@ export default function LoginScreen() {
         <MaterialIcons name="sports-football" size={52} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', top: 100, right: 10 }} />
         <MaterialIcons name="sports-baseball" size={48} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 120, left: 20 }} />
         <MaterialIcons name="sports-hockey" size={56} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', bottom: 80, right: -5 }} />
+        <MaterialIcons name="sports-soccer" size={50} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 160, right: '30%' }} />
         <MaterialIcons name="emoji-events" size={44} color="rgba(255,255,255,0.04)" style={{ position: 'absolute', top: 200, left: '45%' }} />
       </View>
 

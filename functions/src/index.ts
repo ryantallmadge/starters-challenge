@@ -24,6 +24,9 @@ export {
   runStandingsScheduled,
   updateLeaderboardScheduled,
   setTierWinsScheduled,
+  fillStalePendingDraftsScheduled,
+  createNextDaySlatesScheduled,
+  createDailyFreeChallengeScheduled,
 } from "./challenge/endpoints/scheduled.js";
 
 // Task queue functions
